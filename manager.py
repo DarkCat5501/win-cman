@@ -24,7 +24,7 @@ def initializeGit(init, repo, path=".", clone=False):
 		if repo_name.startswith("git@") or repo_name.startswith("https://"): repo = repo_name; break;
 		else: print(f"Sorry, but {repo_name} is not a valid repository name, try again")
 	#TODO initialize or clone git repo
-	
+
 	if clone == True:
 		pygit2.clone_repository(repo, path)
 
@@ -40,19 +40,24 @@ if __name__=="__main__":
 	
 
 	#git repository and initialization arguments
-	parser.add_argument('--git', action=agp.BooleanOptionalAction)
-	parser.add_argument('--repo', default=None)
-	parser.add_argument('--git-clone', action="store_true",default=False)
+	parser.add_argument('--git', 
+		help="skips asking for git repository initialization",
+		action=agp.BooleanOptionalAction)
+	parser.add_argument('--repo', 
+		help="sets the git repository to be initialized",
+		default=None)
+	parser.add_argument('--git-clone', 
+		help="change the behavior of repository initialization for cloning",
+		action="store_true",default=False)
 
 
 	#add libraries
-	parser.add_argument('--add-lib',"--al",
+	parser.add_argument('--use-lib',"--ul",
 	type=str, nargs="+",
 	help="adds a library to current project's dependencies",
 	action='extend')
 
 	args = parser.parse_args(sys.argv[1:])
-
 	
 	if(args.git != False): initializeGit(args.git, args.repo, clone = args.git_clone)
 		
