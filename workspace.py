@@ -3,6 +3,7 @@ from distutils import command
 from enum import Enum, auto, unique
 import json
 from msilib.schema import Property
+from tkinter import UNDERLINE
 from xml.etree.ElementInclude import default_loader
 import colorama as cl
 import os
@@ -72,7 +73,21 @@ class Library:
 		# 	if _isdir and not dir in skip:
 		# 		print(f"found file at:{dir}")
 
+@unique
+class DType(Enum): #Dependency Type
+	UNDEFINED = auto()
+	LIB = auto()
+	PROJ = auto()
+	_count = auto()
 
+@dataclass
+class Dependency:
+	data: object
+	type: DType = field(default=DType.UNDEFINED)
+
+	@staticmethod
+	def parse_dependency(data):
+		pass
 
 @unique
 class PType(Enum):
@@ -80,13 +95,12 @@ class PType(Enum):
 	C = auto()
 	CPP = auto()
 	NODE = auto()
-	STYLED = auto()
 	_count = auto()
 
 @dataclass
 class Project:
-	name: str
-	path: str
+	name: str #name of the project
+	path: str #absolute path to the project folder
 	type: PType = field(default=PType.UNDEFINED)
 	dependencies: list = field(default_factory=list)
 

@@ -1,14 +1,14 @@
 import os
-import argparse as agp
-
 import pygit2
 
+#def generate(name, args):
+# 	if(args.git != False): initializeGit(args.git, args.git_repo, clone = args.git_clone)
+# 	project_path = os.getcwd()
+# 	print(f"Project {name} generated at {project_path}")
 
 def initializeGit(init, repo, path=".", clone=False):
-
 	#checks if the current path already has a git repository initialized
 	if pygit2.discover_repository(path) is not None:
-
 		return
 
 	if init is None:
@@ -30,10 +30,4 @@ def initializeGit(init, repo, path=".", clone=False):
 		pygit2.clone_repository(repo, path)
 
 
-def generate(name, args):
-
-	if(args.git != False): initializeGit(args.git, args.git_repo, clone = args.git_clone)
-
-	project_path = os.getcwd()
-
-	print(f"Project {name} generated at {project_path}")
+def genMakeFile(project):
