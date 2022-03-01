@@ -1,0 +1,6 @@
+{
+	"name":"biblioteca teste",
+	"path":"C:/workspace/win-cman",
+	"includes":["include"],
+	"sources":["src"]
+}

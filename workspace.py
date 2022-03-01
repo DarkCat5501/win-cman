@@ -36,7 +36,7 @@ class Library:
 				data = {}
 				with open(def_file, "r") as _catalog:
 					data = json.load(_catalog)
-				return ( data , def_file ) 
+				return ( data , def_file )
 			except json.JSONDecodeError as error:
 				print(f"{cl.Back.RED}{cl.Fore.BLACK}ERROR{cl.Style.RESET_ALL}: invalid file {def_file}!")
 				print(error)
@@ -65,7 +65,7 @@ class Library:
 		#walk through all folders and set them as projects
 		for dir in [d for d in os.listdir(start_path) if (os.path.isdir(os.path.join(start_path,d)) and not d in skip) ]:
 			library = Library(name=dir, path=os.path.join(start_path, dir))
-			if library.load_libdef_data() is not None:	
+			if library.load_libdef_data() is not None:
 				yield library
 
 		# for dir in [os.path.join(start_path, _d) for _d in  os.listdir(start_path)]:
@@ -119,7 +119,7 @@ class Project:
 				data = {}
 				with open(config_file, "r") as _catalog:
 					data = json.load(_catalog)
-				return ( data , config_file ) 
+				return ( data , config_file )
 			except json.JSONDecodeError as error:
 				print(f"{cl.Back.RED}{cl.Fore.BLACK}ERROR{cl.Style.RESET_ALL}: invalid file {config_file}!")
 				print(error)
@@ -159,7 +159,7 @@ class Project:
 	# 	if showStats:
 	# 		print(f"\t{cl.Fore.CYAN}lib{cl.Style.RESET_ALL}: {name} : {lib_path}")
 
-	# 	return True	
+	# 	return True
 
 
 
@@ -176,7 +176,7 @@ class Workspace:
 		if not self.checkValidity():
 			exit(1)
 		pass
-	
+
 	def load_catalog_data(self, path:str, required=True):
 		catalog_file = os.path.join(path, "catalog.json");
 		has_catalog = os.path.exists(catalog_file)
@@ -185,7 +185,7 @@ class Workspace:
 				data = {}
 				with open(catalog_file, "r") as _catalog:
 					data = json.load(_catalog)
-				return ( data , catalog_file ) 
+				return ( data , catalog_file )
 			except json.JSONDecodeError as error:
 				print(f"{cl.Back.RED}{cl.Fore.BLACK}ERROR{cl.Style.RESET_ALL}: invalid catalog.json!")
 				print(error)
@@ -202,7 +202,7 @@ class Workspace:
 	##libraries START#############################################
 	# TODO: add libraries
 	# def add_library_to_catalog_json(self, path:str, library: Library):
-		
+
 	# 	#a bit of safety check
 	# 	if not Library.validate():
 	# 		print(f"{cl.Back.RED}{cl.Fore.BLACK}ERROR{cl.Style.RESET_ALL}: trying to save an invalid library: {library.name} ")
@@ -218,7 +218,7 @@ class Workspace:
 	# 				data = json.load(_catalog)
 	# 				data.update()
 
-	# 			return ( data , catalog_file ) 
+	# 			return ( data , catalog_file )
 	# 		except json.JSONDecodeError as error:
 	# 			print(f"{cl.Back.RED}{cl.Fore.BLACK}ERROR: {cl.Style.RESET_ALL} invalid catalog.json!")
 	# 			print(error)
@@ -265,7 +265,7 @@ class Workspace:
 		print(f"{cl.Style.DIM}{cl.Back.CYAN}{cl.Fore.BLACK}libraries in {libs_dir} {cl.Style.RESET_ALL}")
 		( data, catalog_path ) = self.load_catalog_data(libs_dir)
 		self.check_libraries(catalog_path, data, showStats=True)
-		
+
 		return True
 
 	##libraries END #############################################
@@ -285,21 +285,21 @@ class Workspace:
 
 		project_list:list[Project] = []
 		skip_folders = []
-		
+
 
 		# #load projects from catalog if not None
-		# if catalog is not None: 
+		# if catalog is not None:
 		# 	(projects, path) = catalog;
 		# 	for project in projects:
 		# 		print(project)
-			
+
 		folder_projects = [ p for p in Project.find(proj_dir,skip=skip_folders)]
 		if len(project_list) < 1:
 			print(f"{cl.Style.DIM}{cl.Back.CYAN}{cl.Fore.BLACK}No projects found in {proj_dir}{cl.Style.RESET_ALL}")
 		else:
 			print(f"{cl.Style.DIM}{cl.Back.CYAN}{cl.Fore.BLACK}Projects in {proj_dir} {cl.Style.RESET_ALL}")
-	
-		
+
+
 		# print(f"{cl.Style.DIM}{cl.Back.CYAN}{cl.Fore.BLACK}Projects in {proj_dir} {cl.Style.RESET_ALL}")
 		# Project.
 
@@ -325,7 +325,7 @@ class Workspace:
 	def valid(self):
 		if self.path is None: return False
 		return os.path.exists(self.path)
-	
+
 	def setWorkspace(self, path):
 		os.putenv("WORKSPACE_FOLDER",path)
 		pass
@@ -333,11 +333,11 @@ class Workspace:
 	def printInfo(self):
 		print("Workspace:")
 		print(f"current workspace folder: {self.path}")
-	
+
 	def parseAction(self,args):
 		if args.subcommand == "libs":
 			if args.list: self.list_libraries();
-				
+
 		elif args.subcommand == "proj":
 			if args.list: self.list_projects();
 

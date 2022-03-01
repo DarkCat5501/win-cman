@@ -1,0 +1,6 @@
+{
+	"compiler":{
+		"path":"g++.exe",
+		"cflags":["std=c++17"]
+	}
+}
