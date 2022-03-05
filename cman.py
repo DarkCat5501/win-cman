@@ -54,7 +54,8 @@ if __name__=="__main__":
 	##projects manager START
 
 	project_action_parser = project_parser.add_subparsers(help="project actions",dest="project_cmd")
-	library_parser = project_action_parser.add_parser("list",help="list all projects")
+	project_list_parser = project_action_parser.add_parser("list",help="list all projects")
+	project_list_parser.add_argument('--color', help="enables colorization",action=agp.BooleanOptionalAction,default=False,required=False,dest="use_colors")
 
 	projects_open_options = project_action_parser.add_parser("open",help="opens a specified project")
 	projects_open_options.add_argument("project",help="The name of the project to be open",action="store")

@@ -19,21 +19,25 @@ class Workspace:
 		print("Workspace:")
 		print(f"current workspace folder: {self.path}")
 
+
+	def parseProjectOpen(self,args):
+		if args.code or args.terminal or args.explorer:
+			self.projects_manager.try_open(args.project,args.code,args.terminal,args.explorer)
+
+	def parseProjectLister(self,args):
+		self.projects_manager.show_projects(args.use_colors)
+
 	def parseProjectAction(self,args):
-		
 		match args.project_cmd:
 			case None:
 				print("getting information about current")
 			
-			case "list": self.projects_manager.show_projects(True)
-			case "open":
-				if args.code or args.terminal or args.explorer:
-					self.projects_manager.try_open(args.project,args.code,args.terminal,args.explorer)
-
+			case "list": self.parseProjectLister(args)
+			case "open": self.parseProjectOpen(args)
 			case "add":
 				config = {"name":args.project_name,"path":args.project_path}
 				if args.project_description is not None: config["description"] = args.project_description
-				p_data = self.projects_manager.new_project(config)
+				p_data = self.projects_manager.new_project(config,True)
 				self.projects_manager.update_projects_file()
 				print(f"added new project to management: {p_data.name}")
 			

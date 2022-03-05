@@ -27,15 +27,17 @@ class ProjectManager:
 		if not ut.save_json_data(self.path, [ asdict(proj) for name, proj in self.projects.items() ]):
 			ut.cerr("Projects were not updated!")
 
-	def new_project(self, config:dict):
-		if not "path" in config or not os.path.isdir(config["path"]):
+	def new_project(self, config:dict,check_path=False):
+		if check_path and not os.path.isdir( config["path"] ):
 			ut.cerr(f"path: { config['path'] } is not a valid project directory!")
+			exit(1)
 
 		_project = ut.create_from("Project",BaseProjectConfig,config,[])
 		_name = _project.name;
 		_tries = 1
 		while _name in self.projects:
 			_name = _project.name + f"-{_tries}"
+			_tries+=1
 		if _name != _project.name:
 			ut.warn(f"Trying to load similar named projects: Renamed to {_name}")
 			_project.name = _name
@@ -61,11 +63,10 @@ class ProjectManager:
 
 	def show_projects(self, use_colors = False):	
 		tabele = Table(maxwidth=100)
-		tabele.set_style(Table.STYLE_COMPACT)
+		tabele.set_style(Table.STYLE_BOX)
 		tabele.columns.header = ("***","name","description") if not use_colors else ("***",f"{cl.Fore.GREEN}name{cl.Fore.RESET}",f"{cl.Fore.CYAN}description{cl.Fore.RESET}")
 		tabele.columns.width = 70;tabele.columns.width[0] = 5;tabele.columns.width[1] = 20
 		tabele.columns.alignment = Table.ALIGN_LEFT
-		tabele.columns.separator = "\uE0B1" if not use_colors else f"{cl.Fore.GREEN}\uE0B1{cl.Fore.RESET}"
 		for line in tabele.stream(self.list_project(use_colors)):
 			print(line)
 
