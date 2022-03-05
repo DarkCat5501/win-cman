@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 import os
 from . import utils as ut
 from beautifultable import BeautifulTable as Table
@@ -9,8 +9,6 @@ class BaseProjectConfig:
 	name:str
 	path: str			= field(default=".")
 	description: str	= field(default=" * No description * ")
-	sources:list[str]	= field(default_factory=list)
-	ignore: list[str]	= field(default_factory=list)
 
 
 
@@ -26,10 +24,13 @@ class ProjectManager:
 			self.new_project(proj)
 
 	def update_projects_file(self):
-		if not ut.save_json_data(self.path, self.projects):
+		if not ut.save_json_data(self.path, [ asdict(proj) for name, proj in self.projects.items() ]):
 			ut.cerr("Projects were not updated!")
 
-	def new_project(self, config):
+	def new_project(self, config:dict):
+		if not "path" in config or not os.path.isdir(config["path"]):
+			ut.cerr(f"path: { config['path'] } is not a valid project directory!")
+
 		_project = ut.create_from("Project",BaseProjectConfig,config,[])
 		_name = _project.name;
 		_tries = 1
@@ -37,7 +38,9 @@ class ProjectManager:
 			_name = _project.name + f"-{_tries}"
 		if _name != _project.name:
 			ut.warn(f"Trying to load similar named projects: Renamed to {_name}")
+			_project.name = _name
 		self.projects[_name] = _project
+		return _project
 
 	def delete_project(self, name):
 		if name in self.projects:

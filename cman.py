@@ -52,12 +52,24 @@ if __name__=="__main__":
 	##libraries management END
 
 	##projects manager START
-	project_parser.add_argument("--list","-ls",help="List all projects you currently working on",action="store_true",default=False)
 
-	project_parser.add_argument("--project","-p",help="Sets the project name",action="store",default=None)
-	project_parser.add_argument("--open","-o",help="Open a specific project in default editor",action="store_true",default=False)
-	project_parser.add_argument("--terminal","-t",help="Open the project in a terminal",action="store_true",default=False)
-	project_parser.add_argument("--explorer","-e",help="Open the project folder in explorer",action="store_true",default=False)
+	project_action_parser = project_parser.add_subparsers(help="project actions",dest="project_cmd")
+	library_parser = project_action_parser.add_parser("list",help="list all projects")
+
+	projects_open_options = project_action_parser.add_parser("open",help="opens a specified project")
+	projects_open_options.add_argument("project",help="The name of the project to be open",action="store")
+	projects_open_options.add_argument("--code","-c",help="Open a specific project in default editor",action="store_true",default=False)
+	projects_open_options.add_argument("--terminal","-t",help="Open the project in a terminal",action="store_true",default=False)
+	projects_open_options.add_argument("--explorer","-e",help="Open the project folder in explorer",action="store_true",default=False)	
+
+	projects_open_options = project_action_parser.add_parser("add",help="adds a new project directly to projects list")
+	projects_open_options.add_argument("project_name",help="The name for the project to be added",action="store")
+	projects_open_options.add_argument("project_path",help="The path to the project to be added",action="store")
+	projects_open_options.add_argument("-d",help="Description for the project",action="store",default=None, dest="project_description")
+
+
+	projects_open_options = project_action_parser.add_parser("remove",help="removes a project from management")
+	projects_open_options.add_argument("project_names",help="Project to be removed from management",nargs="+",action="extend")
 
 	##projects manager END
 
@@ -65,5 +77,6 @@ if __name__=="__main__":
 	args = main_parser.parse_args(sys.argv[1:])
 	if not args.subcommand:
 		current_workspace.printInfo()
+	# print(vars(args)) DEBUG
 	current_workspace.parseAction(args)
 

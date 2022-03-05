@@ -15,7 +15,7 @@ def warn(text):
 	print(f"{cl.Back.YELLOW}{cl.Fore.BLACK} WARNING: {cl.Style.RESET_ALL} {text}",file=sys.stdout,end="\n")
 
 def cerr(text):
-	print(f"ERROR: {text}",file=sys.stderr)
+	print(f"{cl.Back.RED}{cl.Fore.BLACK}ERROR:{cl.Style.RESET_ALL} {text}",file=sys.stderr)
 
 
 def load_json_data(path:str):
@@ -30,9 +30,9 @@ def load_json_data(path:str):
     return data
 
 
-def save_json_data(path:str, data):
+def save_json_data(path:str, data:dict):
 	try:
-		with open(path,"w") as file:	
+		with open(path,"w") as file:
 			json.dump(data,file,ensure_ascii=True,check_circular=True,allow_nan=False,indent=1,sort_keys=False)
 	except IOError as error:
 		warn(f"couldn't save file {path}: {error}")
@@ -40,7 +40,7 @@ def save_json_data(path:str, data):
 	return True
 
 def settupManual():
-		print(f"{cl.Back.RED}{cl.Fore.BLACK}ERROR:{cl.Style.RESET_ALL}\tinvalid workspace settup\n")
+		cerr("invalid workspace settup\n")
 		print(f"\tHow to configure the workspace folder\n"
 		"TODO:"
 		"\n\n"
