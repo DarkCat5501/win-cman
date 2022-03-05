@@ -1,6 +1,6 @@
 from dataclasses import dataclass,field,asdict
 from json import load
-import utils as ut
+from . import utils as ut
 
 #load workspace folder settings
 WORKSPACE_FOLDER = ut.load_workspace()

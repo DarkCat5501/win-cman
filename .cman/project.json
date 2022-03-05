@@ -1,0 +1,5 @@
+{
+	"name":"win-cman",
+	"sources":"src",
+	"ignore":".cman"
+}
