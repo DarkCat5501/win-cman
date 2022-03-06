@@ -7,7 +7,6 @@ import colorama as cl
 import argparse as agp
 
 
-
 class ZipArgument(agp.Action):
 	def __init__(self,attr, *args, **kwargs):
 		self.attr = attr;
@@ -25,6 +24,83 @@ class ZipArgument(agp.Action):
 		except Exception as error:
 			parser.error(f"{self.attr} not provided: {error}")
 		
+class FileValid(agp.Action):
+	def __init__(self, abs:bool, *args, **kwargs):
+		self.abs = abs
+		super(FileValid, self).__init__(*args, **kwargs)
+
+	def check__file_exist(self, path):
+		_path = path
+		if self.abs: _path = os.path.abspath(path);
+		if not os.path.exists(_path):
+			print("Not exist")
+			raise IOError(f"File `{path}` is not a valid directory ")
+		else:
+			return _path
+
+	def __call__(self, parser, namespace, values, option_string): 
+		try:
+			values = self.check__file_exist(values)
+			setattr(namespace, self.dest, values)
+		except IOError as error:
+			parser.error(f"{error}")
+		except TypeError as error:
+			print(values)
+			parser.error(f"mais de um arquivo foi enviado para o parâmetro `{self.dest}`: {error}")
+		except Exception as error:
+			parser.error(f": {error}")
+
+# class FileAt(agp.Action):
+# 	def __init__(self,path:str, abs:bool, *args, **kwargs):
+# 		self.path = path
+# 		self.abs = abs
+# 		super(ZipArgument, self).__init__(*args, **kwargs)
+
+# 	def check__file_exist(self, files:list):
+# 		output = []
+# 		for path in files:
+# 			_path = ut.norm_path(self.path,path)
+# 			if self.abs: _path = os.path.abspath(_path);
+# 			if not os.path.exists(_path):
+# 				IOError(f"File `{path}` is not in directory `{self.path}` ")
+# 			else:
+# 				output.append(_path)
+# 		return output
+
+# 	def __call__(self, parser, namespace, values, option_string): 
+# 		try:
+# 			values = self.check__file_exist(values if isinstance(values,list) else [values])
+# 			self_data = getattr(namespace,self.dest)
+# 			self_data.append(values)
+# 			setattr(namespace, self.dest, self_data)
+# 		except IOError as error:
+# 			parser.error(f"{error}")
+
+# class FileAtAttr(agp.Action):
+# 	def __init__(self,attr:str, abs:bool, *args, **kwargs):
+# 		self.attr = attr
+# 		self.abs = abs
+# 		super(ZipArgument, self).__init__(*args, **kwargs)
+
+# 	def check__file_exist(self, s_path:str, files:list):
+# 		for path in files:
+# 			_path = ut.norm_path(s_path,path)
+# 			if self.abs: _path = os.path.abspath(_path);
+# 			if not os.path.exists(_path):
+# 				IOError(f"File `{path}` is not in directory `{s_path}` ")
+
+# 	def __call__(self, parser, namespace, values, option_string): 
+# 		try:
+# 			attr_data = getattr(namespace,self.attr)
+# 			self.check__file_exist(attr_data, values if isinstance(values,list) else [values])
+# 			self_data = getattr(namespace,self.dest)
+# 			self_data.append(values)
+# 			setattr(namespace, self.dest, self_data)
+# 		except IOError as error:
+# 			parser.error(f"{error}")
+
+
+
 @dataclass
 class BaseProjectConfig:
 	name: str
@@ -130,10 +206,34 @@ class ProjectManager:
 		for line in tabele.stream(self.list_project(use_colors,filter_groups)):
 			print(line)
 
-	def show_info(self):
-		print(f"Current projects list folder: {self.path}")
-		print(f" {len(self.projects.keys())} projects loaded")
+	def show_info(self,project=None,name=False,path=True,description=False,groups=False, use_colors = True):
+		if name is None:
+			print(f"Current projects list folder: {self.path}")
+			print(f" {len(self.projects.keys())} projects loaded")
+		else:
+			if not project in self.projects:
+				ut.cerr(f"Project `{project}` not found!")
+				exit(1)
+			_project = self.projects[project]
+			if not name and not path and not description and not groups:
+				ut.warn("Your dum ass! what you want!!!!")
+				exit(1)
 
+			tabele = Table(maxwidth=120)
+			tabele.set_style(Table.STYLE_BOX)
+			fields = []
+			if name: fields.append("name")# if not use_colors else f"{cl.Fore.GREEN}name{cl.Fore.RESET}" )
+			if path: fields.append("path")# if not use_colors else f"{cl.Fore.GREEN}path{cl.Fore.RESET}" )
+			if groups: fields.append("groups")# if not use_colors else f"{cl.Fore.GREEN}groups{cl.Fore.RESET}" )
+			if description: fields.append("description")# if not use_colors else f"{cl.Fore.GREEN}description{cl.Fore.RESET}" )
+
+			data = [getattr(_project,value) for value in fields]
+			tabele.columns.header = fields
+			tabele.columns.alignment = Table.ALIGN_LEFT
+			tabele.rows.append([",".join(dt) if isinstance(dt,list) else dt for dt in data ])
+			print(tabele)
+
+			
 	def try_open(self, name, editor, terminal,explorer):
 		if name is not None:
 			if name in self.projects:
@@ -172,8 +272,18 @@ class ProjectManager:
 	@staticmethod
 	def add_parser_adder_arguments(parser: agp.ArgumentParser):
 		parser.add_argument("project_name",help="The name for the project to be added",action="store")
-		parser.add_argument("project_path",help="The path to the project to be added",action="store")
+		parser.add_argument("project_path",help="The path to the project to be added",action=FileValid,abs=True)
 		parser.add_argument("-d",help="Description for the project",action="store",default=None, dest="project_description")
+		parser.add_argument("-add-group","--ag",nargs="+",action="extend",help="adds the project into groups",dest="projects_groups", default=[])
+
+	@staticmethod
+	def add_parser_info_arguments(parser: agp.ArgumentParser):
+		parser.add_argument("info_project",help="The name for the project to be added",action="store")
+		parser.add_argument("-n","--name",help="Shows the name of the project",action=agp.BooleanOptionalAction, default=False, dest="info_name")
+		parser.add_argument("-p","--path",help="Shows the path of the project",action=agp.BooleanOptionalAction, default=True, dest="info_path")
+		parser.add_argument("-d","--description",help="Shows the description of the project",action=agp.BooleanOptionalAction, default=False, dest="info_description")
+		parser.add_argument("-g","--groups",help="Shows the name of the project",action=agp.BooleanOptionalAction, default=False, dest="info_groups")
+		#TODO: add type query
 
 	@staticmethod
 	def add_parser_remover_arguments(parser: agp.ArgumentParser):
@@ -187,11 +297,13 @@ class ProjectManager:
 		lister_parser = p_parser.add_parser("list",help="list all projects")
 		adder_parser = p_parser.add_parser("add",help="adds a new project directly to projects list")
 		remover_parser = p_parser.add_parser("remove",help="removes a project from management list")
+		info_parser = p_parser.add_parser("info",help="shows info of an specific project")
 		ProjectManager.add_parser_opener_arguments(opener_parser)
 		ProjectManager.add_parser_editor_arguments(editor_parser)
 		ProjectManager.add_parser_lister_arguments(lister_parser)
 		ProjectManager.add_parser_adder_arguments(adder_parser)
 		ProjectManager.add_parser_remover_arguments(remover_parser)
+		ProjectManager.add_parser_info_arguments(info_parser)
 		return p_parser
 
 	##actions
@@ -201,6 +313,9 @@ class ProjectManager:
 	def parse_opener_actions(self,args):
 		if args.code or args.terminal or args.explorer:
 			self.try_open(args.project,args.code,args.terminal,args.explorer)
+
+	def parse_info_actions(self,args):
+		self.show_info(args.info_project,args.info_name,args.info_path,args.info_description,args.info_groups)
 
 	def parse_editor_actions(self,args):
 		__error = False
@@ -233,7 +348,7 @@ class ProjectManager:
 		elif __need_save: self.update_projects_file()
 
 	def parse_adder_actions(self,args):
-		config = {"name":args.project_name,"path":args.project_path}
+		config = {"name":args.project_name,"path":args.project_path,"groups":args.projects_groups }
 		if args.project_description is not None: config["description"] = args.project_description
 		p_data = self.new_project(config,True)
 		self.update_projects_file()
@@ -257,6 +372,7 @@ class ProjectManager:
 			case "list": self.parse_lister_actions(args)
 			case "add": self.parse_adder_actions(args)
 			case "remove": self.parse_remover_actions(args)
-			case None: ut.cerr("No project option was provided!")
+			case "info": self.parse_info_actions(args)
+			case None:ut.cerr("No project option was provided!")
 
 	##end argparse functions
