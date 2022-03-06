@@ -218,15 +218,12 @@ class ProjectManager:
 			if not name and not path and not description and not groups:
 				ut.warn("Your dum ass! what you want!!!!")
 				exit(1)
-
-			tabele = Table(maxwidth=120)
-			tabele.set_style(Table.STYLE_BOX)
+			tabele = Table(maxwidth=120);tabele.set_style(Table.STYLE_BOX)
 			fields = []
 			if name: fields.append("name")# if not use_colors else f"{cl.Fore.GREEN}name{cl.Fore.RESET}" )
 			if path: fields.append("path")# if not use_colors else f"{cl.Fore.GREEN}path{cl.Fore.RESET}" )
 			if groups: fields.append("groups")# if not use_colors else f"{cl.Fore.GREEN}groups{cl.Fore.RESET}" )
 			if description: fields.append("description")# if not use_colors else f"{cl.Fore.GREEN}description{cl.Fore.RESET}" )
-
 			data = [getattr(_project,value) for value in fields]
 			tabele.columns.header = fields
 			tabele.columns.alignment = Table.ALIGN_LEFT
