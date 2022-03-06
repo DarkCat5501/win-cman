@@ -3,6 +3,7 @@ import os
 from . import utils as ut
 from beautifultable import BeautifulTable as Table
 import colorama as cl
+import argparse as agp
 
 @dataclass
 class BaseProjectConfig:
@@ -90,13 +91,75 @@ class ProjectManager:
 			
 
 
-if __name__=="__main__":
-	workspace = ut.load_workspace()
-	#load projects
-	projects_file = ut.load_workspace_projects(workspace)
-	#generate manager
-	projects_manager = ProjectManager(projects_file)
-	projects_manager.show_projects()
 
 
+	##start argparse functions
+	@staticmethod
+	def add_parser_lister_arguments(parser: agp.ArgumentParser):
+		parser.add_argument('--color', help="enables colorization",action=agp.BooleanOptionalAction,default=False,required=False,dest="use_colors")
+		
+	@staticmethod
+	def add_parser_opener_arguments(parser: agp.ArgumentParser):
+		parser.add_argument("project",help="The name of the project to be open",action="store")
+		parser.add_argument("--code","-c",help="Open a specific project in default editor",action=agp.BooleanOptionalAction,default=True)
+		parser.add_argument("--terminal","-t",help="Open the project in a terminal",action=agp.BooleanOptionalAction,default=False)
+		parser.add_argument("--explorer","-e",help="Open the project folder in explorer",action="store_true",default=False)
 
+	@staticmethod
+	def add_parser_adder_arguments(parser: agp.ArgumentParser):
+		parser.add_argument("project_name",help="The name for the project to be added",action="store")
+		parser.add_argument("project_path",help="The path to the project to be added",action="store")
+		parser.add_argument("-d",help="Description for the project",action="store",default=None, dest="project_description")
+
+	@staticmethod
+	def add_parser_remover_arguments(parser: agp.ArgumentParser):
+		parser.add_argument("project_names",help="Project to be removed from management",nargs="+",action="extend")
+
+	@staticmethod
+	def add_parser_arguments(parser:agp.ArgumentParser):
+		p_parser = parser.add_subparsers(help="project actions",dest="_project_action")
+		opener_parser = p_parser.add_parser("open",help="opens a specified project")
+		lister_parser = p_parser.add_parser("list",help="list all projects")
+		adder_parser = p_parser.add_parser("add",help="adds a new project directly to projects list")
+		remover_parser = p_parser.add_parser("add",help="adds a new project directly to projects list")
+		ProjectManager.add_parser_opener_arguments(opener_parser)
+		ProjectManager.add_parser_lister_arguments(lister_parser)
+		ProjectManager.add_parser_adder_arguments(adder_parser)
+		ProjectManager.add_parser_remover_arguments(remover_parser)
+		return p_parser
+
+	##actions
+	def parse_lister_actions(self,args):
+		self.show_projects(args.use_colors)
+
+	def parse_opener_actions(self,args):
+		if args.code or args.terminal or args.explorer:
+			self.try_open(args.project,args.code,args.terminal,args.explorer)
+
+	def parse_adder_actions(self,args):
+		config = {"name":args.project_name,"path":args.project_path}
+		if args.project_description is not None: config["description"] = args.project_description
+		p_data = self.new_project(config,True)
+		self.update_projects_file()
+		print(f"added new project to management: {p_data.name}")
+
+	def parse_remover_actions(self,args):
+		for p_name in args.project_names:
+			p_data = self.delete_project(p_name)
+			#TODO: check if needs to delete the project, or just forget
+			if p_data is not None:
+				self.update_projects_file()
+				print(f"removed project from management: {p_data.name}")
+			else:
+				ut.cerr(f"No project named `{p_name}` was found!")
+				exit(1)
+	
+	def parse_actions(self,args):
+		match args._project_action:
+			case "open": self.parse_opener_actions(args)
+			case "list": self.parse_lister_actions(args)
+			case "add": self.parse_adder_actions(args)
+			case "remove": self.parse_remover_actions(args)
+			case None: ut.cerr("No project option was provided!")
+
+	##end argparse functions
