@@ -1,22 +1,43 @@
 from dataclasses import asdict, dataclass, field
 import os
+from unicodedata import name
 from . import utils as ut
 from beautifultable import BeautifulTable as Table
 import colorama as cl
 import argparse as agp
+
+
+
+class ZipArgument(agp.Action):
+	def __init__(self,attr, *args, **kwargs):
+		self.attr = attr;
+		super(ZipArgument, self).__init__(*args, **kwargs)
+
+	def __call__(self, parser, namespace, values, option_string): 
+		try:
+			attr_data = getattr(namespace,self.attr)
+			self_data = getattr(namespace,self.dest)
+			to_add = len(attr_data) - len(self_data)-1
+			if to_add > 0 :
+				for i in [[]]*to_add: self_data.append(i);
+			self_data.append(values)
+			setattr(namespace, self.dest, self_data)
+		except Exception as error:
+			parser.error(f"{self.attr} not provided: {error}")
+		
 
 @dataclass
 class BaseProjectConfig:
 	name:str
 	path: str			= field(default=".")
 	description: str	= field(default=" * No description * ")
-
+	groups: list[str]   = field(default_factory=list)
 
 
 @dataclass
 class ProjectManager:
 	path: str;
-	projects:dict = field(default_factory=dict);
+	projects:dict[BaseProjectConfig] = field(default_factory=dict);
 
 	def __post_init__(self):
 		projects_data = ut.load_json_data(self.path);
@@ -45,6 +66,43 @@ class ProjectManager:
 		self.projects[_name] = _project
 		return _project
 
+	def rename_project(self,name,new_name):
+		if not name in self.projects:
+			ut.cerr(f"Trying to rename an inexistent project: `{name}`!")
+			return False
+		elif new_name in self.projects:
+			ut.cerr(f"Trying to name a project with an existing name: `{name}` -> `{new_name}`!")
+			return False
+		tmp = self.projects[name]
+		del self.projects[name]
+		tmp.name = new_name
+		self.projects[new_name] = tmp
+
+	def add_groups(self, name, groups):
+		added = 0
+		if len(groups) == 0: return added
+		if name in self.projects:
+			__proj = self.projects[name]
+			for gp in groups:
+				if not gp in __proj.groups:
+					__proj.groups.append(gp)
+					added+=1
+				else: ut.warn(f"project {name} is already in the group `{gp}`!")
+		return added
+
+	def remove_groups(self, name, groups):
+		removed = 0
+		if len(groups) == 0: return removed
+		if name in self.projects:
+			__proj = self.projects[name]
+			for gp in groups:
+				if gp in __proj.groups:
+					__proj.groups.remove(gp)
+					removed+=1
+				else: ut.warn(f"project {name} is not in group `{gp}`!")
+		return removed
+
+
 	def delete_project(self, name):
 		if name in self.projects:
 			tmp = self.projects[name]
@@ -55,20 +113,23 @@ class ProjectManager:
 	def list_project_names(self) -> list[str]:
 		return list(self.projects.keys())
 
-	def list_project(self,use_colors = False ):
+	def list_project(self,use_colors = False, filter_groups=None):
 		for pname,proj in self.projects.items():
-			if use_colors:
-				yield ("",f"{cl.Fore.GREEN}{pname}{cl.Fore.RESET}",f"{cl.Fore.CYAN}{proj.description}{cl.Fore.RESET}")
-			else :
-				yield ("",pname, proj.description)
+			if filter_groups is not None and not any(x in proj.groups for x in filter_groups):
+				continue
 
-	def show_projects(self, use_colors = False):	
+			if use_colors:
+				yield ("",f"{cl.Fore.GREEN}{pname}{cl.Fore.RESET}",f"{cl.Fore.YELLOW}{','.join(proj.groups)}{cl.Fore.RESET}",f"{cl.Fore.CYAN}{proj.description}{cl.Fore.RESET}")
+			else :
+				yield ("",pname,",".join(proj.groups), proj.description)
+
+	def show_projects(self, use_colors = False, filter_groups=None):	
 		tabele = Table(maxwidth=100)
 		tabele.set_style(Table.STYLE_BOX)
-		tabele.columns.header = ("***","name","description") if not use_colors else ("***",f"{cl.Fore.GREEN}name{cl.Fore.RESET}",f"{cl.Fore.CYAN}description{cl.Fore.RESET}")
-		tabele.columns.width = 70;tabele.columns.width[0] = 5;tabele.columns.width[1] = 20
+		tabele.columns.header = ("***","name","group","description") if not use_colors else ("***",f"{cl.Fore.GREEN}name{cl.Fore.RESET}",f"{cl.Fore.YELLOW}groups{cl.Fore.RESET}",f"{cl.Fore.CYAN}description{cl.Fore.RESET}")
+		tabele.columns.width = 70;tabele.columns.width[0] = 5;tabele.columns.width[1] = tabele.columns.width[2] = 30
 		tabele.columns.alignment = Table.ALIGN_LEFT
-		for line in tabele.stream(self.list_project(use_colors)):
+		for line in tabele.stream(self.list_project(use_colors,filter_groups)):
 			print(line)
 
 	def show_info(self):
@@ -76,7 +137,6 @@ class ProjectManager:
 		print(f" {len(self.projects.keys())} projects loaded")
 
 	def try_open(self, name, editor, terminal,explorer):
-
 		if name is not None:
 			if name in self.projects:
 				p_path = ut.to_win_path(self.projects[name].path)
@@ -89,15 +149,22 @@ class ProjectManager:
 		elif editor or terminal:
 			ut.cerr("No project name was provided!")
 			
-
-
-
-
 	##start argparse functions
 	@staticmethod
 	def add_parser_lister_arguments(parser: agp.ArgumentParser):
-		parser.add_argument('--color', help="enables colorization",action=agp.BooleanOptionalAction,default=False,required=False,dest="use_colors")
+		parser.add_argument('-color', help="enables colorization",action=agp.BooleanOptionalAction,default=False,required=False,dest="use_colors")
+		parser.add_argument('-groups',"--g", help="filter by group name",nargs="+",action="extend",default=None,dest="filter_groups")
 		
+	@staticmethod
+	def add_parser_editor_arguments(parser: agp.ArgumentParser):
+		parser.add_argument("projects",help="project(s) to be edited",nargs="+",action="append")
+		parser.add_argument("-p",help="project(s) to be edited",nargs="+",action="append",dest="projects")
+
+		parser.add_argument("-add-group","--ag",nargs="+",action=ZipArgument,attr="projects", help="adds the project into a new group, if its not already in",dest="add_groups", default=[])
+		parser.add_argument("-remove-group","--rg",nargs="+",action=ZipArgument,attr="projects", help="remore groups from projects",dest="remove_groups", default=[])
+		parser.add_argument("-rename","--rn",nargs="?", action=ZipArgument,attr="projects", help="adds the project into a new group, if its not already in",dest="rename_projects", default=[])
+		parser.add_argument("-power-rename","--prn",nargs=1,type=str, action=ZipArgument,attr="projects", help="adds the project into a new group, if its not already in",dest="power_rename_projects", default=[])
+
 	@staticmethod
 	def add_parser_opener_arguments(parser: agp.ArgumentParser):
 		parser.add_argument("project",help="The name of the project to be open",action="store")
@@ -119,10 +186,12 @@ class ProjectManager:
 	def add_parser_arguments(parser:agp.ArgumentParser):
 		p_parser = parser.add_subparsers(help="project actions",dest="_project_action")
 		opener_parser = p_parser.add_parser("open",help="opens a specified project")
+		editor_parser = p_parser.add_parser("edit",help="edit information about one or multiple projects")
 		lister_parser = p_parser.add_parser("list",help="list all projects")
 		adder_parser = p_parser.add_parser("add",help="adds a new project directly to projects list")
 		remover_parser = p_parser.add_parser("remove",help="removes a project from management list")
 		ProjectManager.add_parser_opener_arguments(opener_parser)
+		ProjectManager.add_parser_editor_arguments(editor_parser)
 		ProjectManager.add_parser_lister_arguments(lister_parser)
 		ProjectManager.add_parser_adder_arguments(adder_parser)
 		ProjectManager.add_parser_remover_arguments(remover_parser)
@@ -130,11 +199,40 @@ class ProjectManager:
 
 	##actions
 	def parse_lister_actions(self,args):
-		self.show_projects(args.use_colors)
+		self.show_projects(args.use_colors,args.filter_groups)
 
 	def parse_opener_actions(self,args):
 		if args.code or args.terminal or args.explorer:
 			self.try_open(args.project,args.code,args.terminal,args.explorer)
+
+	def parse_editor_actions(self,args):
+		__error = False
+		__need_save = False
+
+		if len(args.add_groups) != 0:
+			for __projects,__groups in zip(args.projects, args.add_groups):
+				for proj in __projects: __need_save |= self.add_groups(proj,__groups)>0
+
+		if len(args.remove_groups) != 0:
+			for __projects,__groups in zip(args.projects, args.remove_groups):
+				for proj in __projects: __need_save |= self.remove_groups(proj,__groups)>0
+
+		if len(args.rename_projects) != 0:
+			for __projects, __renames in zip(args.projects, args.rename_projects):
+				if len(__projects) != len(__renames):
+					ut.cerr("The amount of projects renamed is different from the amount of names")
+					__error = True
+				for proj,new_name in zip(__projects,__renames): __need_save |= self.rename_project(proj,new_name)
+
+		if len(args.power_rename_projects) != 0:
+			ut.warn("power renaming is not an official feature yet!")
+			# for action in zip(args.projects, args.power_rename_projects):
+			
+
+		if __error:
+			ut.cerr("An error has ocurred during editing therefore all the editing is invalid!")
+			exit(1)
+		elif __need_save: self.update_projects_file()
 
 	def parse_adder_actions(self,args):
 		config = {"name":args.project_name,"path":args.project_path}
@@ -157,6 +255,7 @@ class ProjectManager:
 	def parse_actions(self,args):
 		match args._project_action:
 			case "open": self.parse_opener_actions(args)
+			case "edit": self.parse_editor_actions(args)
 			case "list": self.parse_lister_actions(args)
 			case "add": self.parse_adder_actions(args)
 			case "remove": self.parse_remover_actions(args)
