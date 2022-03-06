@@ -12,6 +12,7 @@ class Workspace:
 	def __init__(self) -> None:
 		self.path = ut.load_workspace()
 		self.projects_manager = ProjectManager(ut.load_workspace_projects(self.path))
+		self.config = ut.create_from("Configuration",ConfigData,ut.load_json_data(ut.load_workspace_config(self.path)))
 
 
 	def printInfo(self):
@@ -36,7 +37,7 @@ class Workspace:
 	def parse_arguments(self, args):
 		if not args.submodule: self.printInfo();exit()
 		match args.submodule:
-			case "proj": self.projects_manager.parse_actions(args)
+			case "proj": self.projects_manager.parse_actions(args,self.config)
 
 	## end argparse options ##
 

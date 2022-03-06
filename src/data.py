@@ -41,8 +41,9 @@ class Compiler:
 @dataclass()
 class ConfigData:
 	version: str  = field()
-	compiler: Compiler = field(default_factory=Compiler)
 	makefile: bool = field(default=False)
+	default_editor: str = field(default="code \"{path}\"")
+	default_terminal: str = field(default="wt -w 1 -d \"{path}\"")
 
 	@staticmethod
 	def load(path:str):

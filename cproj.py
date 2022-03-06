@@ -10,5 +10,5 @@ if __name__=="__main__":
 	wp.Workspace.add_parser_version_arguments(main_parser)
 	ProjectManager.add_parser_arguments(main_parser)
 	args = main_parser.parse_args(sys.argv[1:])
-	current_workspace.projects_manager.parse_actions(args)
+	current_workspace.projects_manager.parse_actions(args, current_workspace.config)
 

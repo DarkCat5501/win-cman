@@ -1,6 +1,6 @@
 from dataclasses import asdict, dataclass, field
 import os
-from unicodedata import name
+from .data import ConfigData
 from . import utils as ut
 from beautifultable import BeautifulTable as Table
 import colorama as cl
@@ -231,17 +231,13 @@ class ProjectManager:
 			print(tabele)
 
 			
-	def try_open(self, name, editor:str, terminal:str,explorer):
+	def try_open(self, name, editor:tuple, terminal:tuple,explorer):
 		if name is not None:
 			if name in self.projects:
 				p_path = ut.to_win_path(self.projects[name].path)
 				options = {"path":p_path}
-				if editor:
-					command = f"{editor}"
-					os.system(command.format(**options))
-				if terminal:
-					command = f"{terminal}"
-					os.system(command.format(**options))
+				if editor[0]:os.system(f"{editor[1]}".format(**options))
+				if terminal[0]:os.system( f"{terminal[1]}".format(**options))
 				if explorer: os.system(f"explorer \"{p_path}\"")
 			else:
 				ut.cerr(f"Project \"{name}\" not found!")
@@ -268,11 +264,13 @@ class ProjectManager:
 	def add_parser_opener_arguments(parser: agp.ArgumentParser):
 		parser.add_argument("project",help="The name of the project to be open",action="store")
 
-		#TODO: parse default editor and terminal from workspace config
-		parser.add_argument("--code","-c",nargs="?",help="Open a specific project in default editor",const="code \"{path}\"",action="store",default="code \"{path}\"")
+		parser.add_argument("--code","-c",help="Open a specific project in default editor",action = agp.BooleanOptionalAction,default=True,dest="open_code")
+		parser.add_argument("--terminal","-t",help="Open the project in a terminal",action=agp.BooleanOptionalAction,default=False,dest="open_terminal")
+		parser.add_argument("--explorer","-e",help="Open the project folder in explorer",action="store_true",default=False,dest="open_explorer")
+		parser.add_argument("--use-editor",help="Open a specific project in default editor",action="store",default=None,dest="open_use_editor" )
+		parser.add_argument("--use-terminal",help="Open the project in a terminal",action="store",default=None,dest="open_use_terminal" )
 
-		parser.add_argument("--terminal","-t",nargs="?",help="Open the project in a terminal",const="wt -w 1 -d \"{path}\"",action="store",default=None)
-		parser.add_argument("--explorer","-e",help="Open the project folder in explorer",action="store_true",default=False)
+
 
 	@staticmethod
 	def add_parser_adder_arguments(parser: agp.ArgumentParser):
@@ -315,9 +313,12 @@ class ProjectManager:
 	def parse_lister_actions(self,args):
 		self.show_projects(args.use_colors,args.filter_groups)
 
-	def parse_opener_actions(self,args):
-		if args.code or args.terminal or args.explorer:
-			self.try_open(args.project,args.code,args.terminal,args.explorer)
+	def parse_opener_actions(self,args,config:ConfigData):
+		if args.open_code or args.open_terminal or args.open_explorer:
+			if args.open_code and args.open_use_editor is None: args.open_use_editor = config.default_editor;
+			if args.open_terminal and args.open_use_terminal is None: args.open_use_terminal = config.default_terminal;
+
+			self.try_open(args.project,(args.open_code, args.open_use_editor),(args.open_terminal,args.open_use_terminal),args.open_explorer)
 
 	def parse_info_actions(self,args):
 		self.show_info(args.info_project,args.info_name,args.info_path,args.info_description,args.info_groups)
@@ -370,9 +371,9 @@ class ProjectManager:
 				ut.cerr(f"No project named `{p_name}` was found!")
 				exit(1)
 	
-	def parse_actions(self,args):
+	def parse_actions(self,args, config: ConfigData):
 		match args._project_action:
-			case "open": self.parse_opener_actions(args)
+			case "open": self.parse_opener_actions(args,config)
 			case "edit": self.parse_editor_actions(args)
 			case "list": self.parse_lister_actions(args)
 			case "add": self.parse_adder_actions(args)
