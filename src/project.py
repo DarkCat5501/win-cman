@@ -231,12 +231,17 @@ class ProjectManager:
 			print(tabele)
 
 			
-	def try_open(self, name, editor, terminal,explorer):
+	def try_open(self, name, editor:str, terminal:str,explorer):
 		if name is not None:
 			if name in self.projects:
 				p_path = ut.to_win_path(self.projects[name].path)
-				if editor: os.system(f"code \"{p_path}\"")
-				if terminal: os.system(f"wt -w 1 -d \"{p_path}\"")
+				options = {"path":p_path}
+				if editor:
+					command = f"{editor}"
+					os.system(command.format(**options))
+				if terminal:
+					command = f"{terminal}"
+					os.system(command.format(**options))
 				if explorer: os.system(f"explorer \"{p_path}\"")
 			else:
 				ut.cerr(f"Project \"{name}\" not found!")
@@ -262,8 +267,11 @@ class ProjectManager:
 	@staticmethod
 	def add_parser_opener_arguments(parser: agp.ArgumentParser):
 		parser.add_argument("project",help="The name of the project to be open",action="store")
-		parser.add_argument("--code","-c",help="Open a specific project in default editor",action=agp.BooleanOptionalAction,default=True)
-		parser.add_argument("--terminal","-t",help="Open the project in a terminal",action=agp.BooleanOptionalAction,default=False)
+
+		#TODO: parse default editor and terminal from workspace config
+		parser.add_argument("--code","-c",nargs="?",help="Open a specific project in default editor",const="code \"{path}\"",action="store",default="code \"{path}\"")
+
+		parser.add_argument("--terminal","-t",nargs="?",help="Open the project in a terminal",const="wt -w 1 -d \"{path}\"",action="store",default=None)
 		parser.add_argument("--explorer","-e",help="Open the project folder in explorer",action="store_true",default=False)
 
 	@staticmethod
