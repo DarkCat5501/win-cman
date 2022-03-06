@@ -25,14 +25,12 @@ class ZipArgument(agp.Action):
 		except Exception as error:
 			parser.error(f"{self.attr} not provided: {error}")
 		
-
 @dataclass
 class BaseProjectConfig:
-	name:str
+	name: str
 	path: str			= field(default=".")
 	description: str	= field(default=" * No description * ")
 	groups: list[str]   = field(default_factory=list)
-
 
 @dataclass
 class ProjectManager:
@@ -50,10 +48,10 @@ class ProjectManager:
 			ut.cerr("Projects were not updated!")
 
 	def new_project(self, config:dict,check_path=False):
-		if check_path and not os.path.isdir( config["path"] ):
+		_path = ut.to_win_path(config["path"])
+		if check_path and not os.path.isdir(_path):
 			ut.cerr(f"path: { config['path'] } is not a valid project directory!")
 			exit(1)
-
 		_project = ut.create_from("Project",BaseProjectConfig,config,[])
 		_name = _project.name;
 		_tries = 1
@@ -77,6 +75,7 @@ class ProjectManager:
 		del self.projects[name]
 		tmp.name = new_name
 		self.projects[new_name] = tmp
+		return True
 
 	def add_groups(self, name, groups):
 		added = 0
@@ -117,7 +116,6 @@ class ProjectManager:
 		for pname,proj in self.projects.items():
 			if filter_groups is not None and not any(x in proj.groups for x in filter_groups):
 				continue
-
 			if use_colors:
 				yield ("",f"{cl.Fore.GREEN}{pname}{cl.Fore.RESET}",f"{cl.Fore.YELLOW}{','.join(proj.groups)}{cl.Fore.RESET}",f"{cl.Fore.CYAN}{proj.description}{cl.Fore.RESET}")
 			else :
@@ -159,10 +157,9 @@ class ProjectManager:
 	def add_parser_editor_arguments(parser: agp.ArgumentParser):
 		parser.add_argument("projects",help="project(s) to be edited",nargs="+",action="append")
 		parser.add_argument("-p",help="project(s) to be edited",nargs="+",action="append",dest="projects")
-
 		parser.add_argument("-add-group","--ag",nargs="+",action=ZipArgument,attr="projects", help="adds the project into a new group, if its not already in",dest="add_groups", default=[])
 		parser.add_argument("-remove-group","--rg",nargs="+",action=ZipArgument,attr="projects", help="remore groups from projects",dest="remove_groups", default=[])
-		parser.add_argument("-rename","--rn",nargs="?", action=ZipArgument,attr="projects", help="adds the project into a new group, if its not already in",dest="rename_projects", default=[])
+		parser.add_argument("-rename","--rn",nargs="+", action=ZipArgument,attr="projects", help="adds the project into a new group, if its not already in",dest="rename_projects", default=[])
 		parser.add_argument("-power-rename","--prn",nargs=1,type=str, action=ZipArgument,attr="projects", help="adds the project into a new group, if its not already in",dest="power_rename_projects", default=[])
 
 	@staticmethod
@@ -217,6 +214,7 @@ class ProjectManager:
 			for __projects,__groups in zip(args.projects, args.remove_groups):
 				for proj in __projects: __need_save |= self.remove_groups(proj,__groups)>0
 
+		
 		if len(args.rename_projects) != 0:
 			for __projects, __renames in zip(args.projects, args.rename_projects):
 				if len(__projects) != len(__renames):

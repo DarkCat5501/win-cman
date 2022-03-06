@@ -7,8 +7,6 @@ class Workspace:
 	path:str
 	projects_manager:ProjectManager
 	templates_path:str
-
-
 	config: ConfigData
 
 	def __init__(self) -> None:
@@ -20,7 +18,8 @@ class Workspace:
 		print("Workspace:")
 		print(f"current workspace folder: {self.path}")
 
-	## start argparse options
+	## start argparse options ##
+
 	@staticmethod
 	def add_parser_version_arguments(parser: agp.ArgumentParser):
 		parser.add_argument('--version',action='version',version=f"win-cman 0.1")
@@ -38,6 +37,8 @@ class Workspace:
 		if not args.submodule: self.printInfo();exit()
 		match args.submodule:
 			case "proj": self.projects_manager.parse_actions(args)
+
+	## end argparse options ##
 
 if __name__=="__main__":
 	current_workspace = Workspace()
