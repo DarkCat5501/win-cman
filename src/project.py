@@ -121,7 +121,7 @@ class ProjectManager:
 		opener_parser = p_parser.add_parser("open",help="opens a specified project")
 		lister_parser = p_parser.add_parser("list",help="list all projects")
 		adder_parser = p_parser.add_parser("add",help="adds a new project directly to projects list")
-		remover_parser = p_parser.add_parser("add",help="adds a new project directly to projects list")
+		remover_parser = p_parser.add_parser("remove",help="removes a project from management list")
 		ProjectManager.add_parser_opener_arguments(opener_parser)
 		ProjectManager.add_parser_lister_arguments(lister_parser)
 		ProjectManager.add_parser_adder_arguments(adder_parser)
